@@ -225,6 +225,14 @@
     color: #e07070;
   }
 
+  .menu-category {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #7a8fa6;
+    margin: 8px 0 4px;
+  }
   .source-tag {
     font-size: 0.7rem;
     padding: 2px 6px;
@@ -323,7 +331,7 @@ async function refresh() {
 
     const withMenu = allRestaurants.filter(r => r.menu && r.menu.length > 0).length;
     document.getElementById('stats').textContent =
-      `Found ${allRestaurants.length} restaurants · ${withMenu} have daily menus · Powered by Overpass OSM + menicka.cz`;
+      `Nalezeno ${allRestaurants.length} restaurací · ${withMenu} má dnešní menu · Zdroj: menicka.cz`;
 
     if (allRestaurants.length === 0) {
       document.getElementById('empty').style.display = 'block';
@@ -355,19 +363,22 @@ function renderRestaurants(restaurants) {
     let menuHtml = '';
     if (hasMenu) {
       const source = r.menu_source === 'menicka' ? '<span class="source-tag">menicka.cz</span>' : '<span class="source-tag">AI</span>';
+      const soups = r.menu.filter(i => i.type === 'polevka');
+      const mains = r.menu.filter(i => i.type !== 'polevka');
+      const renderItem = item => `
+        <div class="menu-item">
+          <span class="menu-item-name">${item.name}</span>
+          <span class="menu-item-price">${item.price || ''}</span>
+        </div>`;
       menuHtml = `
         <div class="menu-section">
-          <div class="menu-title">Today's Menu ${source}</div>
-          ${r.menu.map(item => `
-            <div class="menu-item">
-              <span class="menu-item-name">${item.name}</span>
-              <span class="menu-item-price">${item.price || ''}</span>
-            </div>
-          `).join('')}
+          <div class="menu-title">Dnešní menu ${source}</div>
+          ${soups.length ? `<div class="menu-category">🍵 Polévky</div>${soups.map(renderItem).join('')}` : ''}
+          ${mains.length ? `<div class="menu-category">🍽️ Hlavní jídla</div>${mains.map(renderItem).join('')}` : ''}
         </div>`;
-    } else if (hasWebsite) {
+    } else if (hasWebsite && r.source !== 'menicka') {
       menuHtml = `<button class="load-menu-btn" onclick="loadMenu(${r.id}, '${encodeURIComponent(r.website)}', '${encodeURIComponent(r.name)}', this)">
-        🤖 Load menu with AI
+        🤖 Načíst menu pomocí AI
       </button>`;
     } else {
       menuHtml = `<div class="menu-section"><span class="no-menu">No website available</span></div>`;

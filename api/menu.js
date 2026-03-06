@@ -61,9 +61,15 @@ async function parseMenuWithOpenAI(text, name) {
       timeout: 20000
     }, JSON.stringify({
       model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: `Extract today's (${today}) daily lunch menu from this restaurant website text. Return ONLY a JSON array. Each item: {"name": "...", "price": "... Kč"}. If no daily menu found, return []. Restaurant: ${name}\nText: ${text}` }],
+      messages: [{ role: 'user', content: `Najdi dnešní (${today}) polední/denní menu z tohoto textu české restaurace.
+Hledej sekce nazvané: "polední menu", "denní menu", "menu dne", "obědové menu", "dnešní nabídka" nebo podobně.
+Vrať POUZE JSON pole. Každá položka: {"name": "název jídla", "price": "cena Kč", "type": "polevka nebo jidlo"}.
+Polévky mají type "polevka", ostatní jídla "jidlo".
+Pokud žádné denní menu nenajdeš, vrať [].
+Restaurace: ${name}
+Text: ${text}` }],
       temperature: 0.1,
-      max_tokens: 500
+      max_tokens: 600
     }));
     const content = res.body?.choices?.[0]?.message?.content || '[]';
     const match = content.match(/\[[\s\S]*?\]/);
