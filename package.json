@@ -1,0 +1,15 @@
+{
+  "name": "menu-finder",
+  "version": "1.0.0",
+  "description": "Find nearby restaurants and their daily lunch menus",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["restaurant", "menu", "food", "daily-menu"],
+  "license": "MIT"
+}

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍽️ Daily Menu Finder</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f1117;
+    color: #e8eaed;
+    min-height: 100vh;
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a1f2e, #252b3b);
+    padding: 24px 32px;
+    border-bottom: 1px solid #2d3448;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  header h1 { font-size: 1.6rem; font-weight: 700; }
+  header h1 span { color: #4f9cf9; }
+
+  #status-bar {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: #8b95a8;
+  }
+
+  #location-info { color: #4f9cf9; }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid #2d3448;
+    border-top-color: #4f9cf9;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #controls {
+    padding: 20px 32px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: #13171f;
+    border-bottom: 1px solid #2d3448;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .btn-primary { background: #4f9cf9; color: #fff; }
+  .btn-primary:hover { background: #3d85e0; }
+  .btn-secondary { background: #252b3b; color: #e8eaed; border: 1px solid #2d3448; }
+  .btn-secondary:hover { background: #2d3448; }
+
+  select {
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: #252b3b;
+    border: 1px solid #2d3448;
+    color: #e8eaed;
+    font-size: 0.9rem;
+  }
+
+  #stats {
+    padding: 12px 32px;
+    font-size: 0.85rem;
+    color: #8b95a8;
+    background: #0f1117;
+  }
+
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+    padding: 24px 32px;
+  }
+
+  .card {
+    background: #1a1f2e;
+    border-radius: 14px;
+    border: 1px solid #2d3448;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .card-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #2d3448;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .card-name { font-size: 1.05rem; font-weight: 700; line-height: 1.3; }
+  .card-cuisine { font-size: 0.78rem; color: #8b95a8; margin-top: 4px; }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .badge-dist { background: #1e3a5f; color: #4f9cf9; }
+  .badge-menu { background: #1a3a2a; color: #4caf84; }
+  .badge-none { background: #2d2d1a; color: #a89a4c; }
+
+  .card-meta {
+    padding: 10px 20px;
+    display: flex;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: #8b95a8;
+    border-bottom: 1px solid #2d3448;
+    flex-wrap: wrap;
+  }
+
+  .card-meta a { color: #4f9cf9; text-decoration: none; }
+  .card-meta a:hover { text-decoration: underline; }
+
+  .menu-section { padding: 14px 20px 18px; }
+  .menu-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8b95a8;
+    margin-bottom: 10px;
+  }
+
+  .menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1px dashed #2d3448;
+    gap: 10px;
+  }
+
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item-name { font-size: 0.88rem; color: #c8d0dc; flex: 1; line-height: 1.4; }
+  .menu-item-price { font-size: 0.88rem; font-weight: 700; color: #4caf84; white-space: nowrap; }
+
+  .load-menu-btn {
+    display: block;
+    width: calc(100% - 40px);
+    margin: 0 20px 18px;
+    padding: 9px;
+    background: #252b3b;
+    border: 1px dashed #3d4558;
+    border-radius: 8px;
+    color: #8b95a8;
+    font-size: 0.82rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .load-menu-btn:hover { background: #2d3448; color: #e8eaed; border-color: #4f9cf9; }
+  .load-menu-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .no-menu { color: #8b95a8; font-size: 0.85rem; font-style: italic; }
+
+  #empty {
+    text-align: center;
+    padding: 80px 32px;
+    color: #8b95a8;
+  }
+
+  #empty h2 { font-size: 2rem; margin-bottom: 12px; }
+  #empty p { font-size: 1rem; }
+
+  #loading {
+    display: none;
+    text-align: center;
+    padding: 80px 32px;
+    color: #8b95a8;
+  }
+
+  #loading .big-spinner {
+    width: 48px; height: 48px;
+    border: 4px solid #2d3448;
+    border-top-color: #4f9cf9;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  #error {
+    display: none;
+    margin: 24px 32px;
+    padding: 16px 20px;
+    background: #2a1a1a;
+    border: 1px solid #5a2a2a;
+    border-radius: 10px;
+    color: #e07070;
+  }
+
+  .source-tag {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #1e3a2a;
+    color: #4caf84;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>🍽️</div>
+  <div>
+    <h1>Daily Menu <span>Finder</span></h1>
+  </div>
+  <div id="status-bar">
+    <span id="location-info">Getting location…</span>
+    <div class="spinner" id="loc-spinner"></div>
+  </div>
+</header>
+
+<div id="controls">
+  <button class="btn btn-primary" onclick="refresh()">🔄 Refresh</button>
+  <select id="radius-select" onchange="refresh()">
+    <option value="500">500m radius</option>
+    <option value="1000" selected>1 km radius</option>
+    <option value="2000">2 km radius</option>
+    <option value="3000">3 km radius</option>
+  </select>
+  <button class="btn btn-secondary" onclick="loadAllMenus()">📋 Load all menus (AI)</button>
+</div>
+
+<div id="stats"></div>
+<div id="error"></div>
+
+<div id="loading">
+  <div class="big-spinner"></div>
+  <p>Finding restaurants nearby…</p>
+</div>
+
+<div id="empty">
+  <h2>🗺️</h2>
+  <p>Waiting for your location…</p>
+</div>
+
+<div id="grid"></div>
+
+<script>
+let currentLat = null, currentLng = null;
+let allRestaurants = [];
+
+function showError(msg) {
+  const el = document.getElementById('error');
+  el.style.display = 'block';
+  el.textContent = '⚠️ ' + msg;
+}
+
+function setStatus(msg) {
+  document.getElementById('location-info').textContent = msg;
+}
+
+function getLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject('Geolocation not supported');
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10000
+    });
+  });
+}
+
+async function refresh() {
+  document.getElementById('error').style.display = 'none';
+  document.getElementById('grid').innerHTML = '';
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('stats').textContent = '';
+
+  try {
+    if (!currentLat) {
+      const pos = await getLocation();
+      currentLat = pos.coords.latitude;
+      currentLng = pos.coords.longitude;
+      document.getElementById('loc-spinner').style.display = 'none';
+      setStatus(`📍 ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`);
+    }
+
+    const radius = document.getElementById('radius-select').value;
+    const res = await fetch(`/api/restaurants?lat=${currentLat}&lng=${currentLng}&radius=${radius}`);
+    const data = await res.json();
+    allRestaurants = data.restaurants || [];
+
+    document.getElementById('loading').style.display = 'none';
+
+    const withMenu = allRestaurants.filter(r => r.menu && r.menu.length > 0).length;
+    document.getElementById('stats').textContent =
+      `Found ${allRestaurants.length} restaurants · ${withMenu} have daily menus · Powered by Overpass OSM + menicka.cz`;
+
+    if (allRestaurants.length === 0) {
+      document.getElementById('empty').style.display = 'block';
+      document.getElementById('empty').querySelector('p').textContent = 'No restaurants found nearby. Try increasing the radius.';
+      return;
+    }
+
+    renderRestaurants(allRestaurants);
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('empty').style.display = 'block';
+    showError('Could not load restaurants: ' + (e.message || e));
+    console.error(e);
+  }
+}
+
+function renderRestaurants(restaurants) {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  for (const r of restaurants) {
+    const hasMenu = r.menu && r.menu.length > 0;
+    const hasWebsite = !!r.website;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'card-' + r.id;
+
+    let menuHtml = '';
+    if (hasMenu) {
+      const source = r.menu_source === 'menicka' ? '<span class="source-tag">menicka.cz</span>' : '<span class="source-tag">AI</span>';
+      menuHtml = `
+        <div class="menu-section">
+          <div class="menu-title">Today's Menu ${source}</div>
+          ${r.menu.map(item => `
+            <div class="menu-item">
+              <span class="menu-item-name">${item.name}</span>
+              <span class="menu-item-price">${item.price || ''}</span>
+            </div>
+          `).join('')}
+        </div>`;
+    } else if (hasWebsite) {
+      menuHtml = `<button class="load-menu-btn" onclick="loadMenu(${r.id}, '${encodeURIComponent(r.website)}', '${encodeURIComponent(r.name)}', this)">
+        🤖 Load menu with AI
+      </button>`;
+    } else {
+      menuHtml = `<div class="menu-section"><span class="no-menu">No website available</span></div>`;
+    }
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-name">${r.name}</div>
+          ${r.cuisine ? `<div class="card-cuisine">🍴 ${r.cuisine}</div>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <span class="badge badge-dist">📍 ${r.distance}m</span>
+          ${hasMenu ? '<span class="badge badge-menu">✅ Menu</span>' : '<span class="badge badge-none">No menu</span>'}
+        </div>
+      </div>
+      <div class="card-meta">
+        ${r.website ? `<a href="${r.website}" target="_blank">🌐 Website</a>` : ''}
+        ${r.phone ? `<span>📞 ${r.phone}</span>` : ''}
+        ${r.opening_hours ? `<span>🕐 ${r.opening_hours}</span>` : ''}
+      </div>
+      ${menuHtml}
+    `;
+
+    grid.appendChild(card);
+  }
+}
+
+async function loadMenu(id, websiteEncoded, nameEncoded, btn) {
+  btn.disabled = true;
+  btn.textContent = '🤖 Parsing with AI…';
+
+  const website = decodeURIComponent(websiteEncoded);
+  const name = decodeURIComponent(nameEncoded);
+
+  try {
+    const res = await fetch(`/api/menu?website=${websiteEncoded}&name=${nameEncoded}`);
+    const menu = await res.json();
+
+    const card = document.getElementById('card-' + id);
+    const btnParent = btn.parentElement;
+
+    if (menu && menu.length > 0) {
+      // Find and update in allRestaurants
+      const r = allRestaurants.find(r => r.id === id);
+      if (r) { r.menu = menu; r.menu_source = 'ai'; }
+
+      const menuDiv = document.createElement('div');
+      menuDiv.className = 'menu-section';
+      menuDiv.innerHTML = `
+        <div class="menu-title">Today's Menu <span class="source-tag">AI</span></div>
+        ${menu.map(item => `
+          <div class="menu-item">
+            <span class="menu-item-name">${item.name}</span>
+            <span class="menu-item-price">${item.price || ''}</span>
+          </div>
+        `).join('')}
+      `;
+      btnParent.replaceChild(menuDiv, btn);
+
+      // Update badge
+      const badge = card.querySelector('.badge-none');
+      if (badge) { badge.className = 'badge badge-menu'; badge.textContent = '✅ Menu'; }
+    } else {
+      btn.textContent = '❌ No menu found on website';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    btn.textContent = '❌ Failed – try again';
+    btn.disabled = false;
+  }
+}
+
+async function loadAllMenus() {
+  const withWebsite = allRestaurants.filter(r => r.website && (!r.menu || r.menu.length === 0));
+  if (withWebsite.length === 0) { alert('No restaurants left to load menus for!'); return; }
+
+  for (const r of withWebsite) {
+    const card = document.getElementById('card-' + r.id);
+    if (!card) continue;
+    const btn = card.querySelector('.load-menu-btn');
+    if (btn) await loadMenu(r.id, encodeURIComponent(r.website), encodeURIComponent(r.name), btn);
+    await new Promise(res => setTimeout(res, 500)); // small delay between requests
+  }
+}
+
+// Auto-start
+window.addEventListener('load', refresh);
+</script>
+</body>
+</html>
